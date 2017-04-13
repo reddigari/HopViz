@@ -14,25 +14,27 @@
         body {
             font-family: sans-serif;
         }
-        /*.svg-container {
-            display: inline-block;
-            position: relative;
-            width: 100%;
-            padding-bottom: 100%;
-            vertical-align: top;
-            overflow: hidden;
-        }*/
-        /*.svg-content-responsive {
-            display: inline-block;
+        div.tooltip {
             position: absolute;
-            top: 10px;
-            left: 0;
-        }*/
+            text-align: center;
+            vertical-align: middle;
+            width: 100px;
+            height: auto;
+            padding: 2px;
+            font: 12px sans-serif;
+            color: white;
+            background: black;
+            border: 0px;
+            border-radius: 8px;
+            pointer-events: none;
+        }
     </style>
 </head>
 
 <body>
-    <div id="chartId"></div>
+    <div class="tooltip" style="opacity: 0"></div>
+    <div id="chartId" style="display: inline-block;"></div>
+    <div id="legendId" style="display: inline-block; padding-left: 25px"></div>
     <script>
         var id = "#chartId";
 
@@ -46,15 +48,17 @@
                 left: 50
             }, //The margins of the SVG
             levels: 3, //How many levels or inner circles should there be drawn
-            maxValue: 9, //What is the value that the biggest circle will represent
+            maxValue: 7, //What is the value that the biggest circle will represent
             labelFactor: 1.1, //How much farther than the radius of the outer circle should the labels be placed
             wrapWidth: 60, //The number of pixels after which a label needs to be given a new line
             opacityArea: 0.35, //The opacity of the area of the blob
             dotRadius: 4, //The size of the colored circles of each blog
-            opacityCircles: 0.1, //The opacity of the circles of each blob
+            opacityCircles: 0.05, //The opacity of the circles of each blob
             strokeWidth: 2, //The width of the stroke around each blob
             roundStrokes: false, //If true the area and stroke will follow a round path (cardinal-closed)
-            color: d3.scaleOrdinal(d3.schemeCategory10) //Color function
+            color: d3.scaleOrdinal(d3.schemeCategory10), //Color function
+            radarStrokeColor: "#002057",
+            radarStrokeOpacity: 0.4
         };
 
         var dims = ['CITRUS', 'TROPICAL FRUIT', 'STONE FRUIT', 'APPLE-PEAR',
@@ -84,6 +88,12 @@
         //Append a g element
         var g = svg.append("g")
             .attr("transform", "translate(" + (cfg.w / 2 + cfg.margin.left) + "," + (cfg.h / 2 + cfg.margin.top) + ")");
+
+        var legend = d3.select("#legendId").append("svg")
+            .attr("width", 200)
+            .attr("height", 600)
+            .append("g");
+
         //Wrapper for the grid & axes
         var axisGrid = g.append("g").attr("class", "axisWrapper");
 
@@ -97,6 +107,7 @@
                 return radius / cfg.levels * d;
             })
             .style("fill", "#CDCDCD")
+            // .style("fill", "#247724")
             .style("stroke", "#CDCDCD")
             .style("fill-opacity", cfg.opacityCircles);
         // .style("filter", "url(#glow)");
@@ -114,7 +125,8 @@
             .style("font-size", "10px")
             .attr("fill", "#737373")
             .text(function(d, i) {
-                return maxValue * d / cfg.levels;
+                // return maxValue * d / cfg.levels;
+                return d3.format(".2f")(maxValue * d / cfg.levels);
             });
 
         //Create the straight lines radiating outward from the center
@@ -155,61 +167,120 @@
             .call(wrap, cfg.wrapWidth);
 
         var radarLine = d3.radialLine()
-      		// .interpolate("linear-closed")
-      		.radius(function(d) { return rScale(d.value); })
-      		.angle(function(d,i) {	return i*angleSlice; });
-
-        radarLine.curve(d3.curveLinearClosed);
-
-        d3.json("hop_data/cascade.json", function(data) {
-
-            var newData = [];
-            senses.forEach(function(s) {
-              var senseHolder = []
-              data.forEach(function(d) {
-                senseHolder.push({axis: d.dimension, value: d3.mean(d[s])});
-              })
-              newData.push(senseHolder);
+            // .interpolate("linear-closed")
+            .radius(function(d) {
+                return rScale(d.value);
+            })
+            .angle(function(d, i) {
+                return i * angleSlice;
             });
-            console.log(newData);
 
-            data = newData;
+        radarLine.curve(d3.curveLinearClosed); // new version of interpolation I think
 
-            var blobWrapper = g.selectAll(".radarWrapper")
-          		.data(data)
-          		.enter().append("g")
-          		.attr("class", "radarWrapper");
-            blobWrapper.append("path")
-          		.attr("class", "radarStroke")
-          		.attr("d", function(d,i) { return radarLine(d); })
-          		.style("stroke-width", cfg.strokeWidth + "px")
-          		.style("stroke", function(d,i) { return cfg.color(i); })
-          		.style("fill", "none");
-          		// .style("filter" , "url(#glow)");
+        function extractAvgs(hopData, sense) {
+            return hopData.data.map(function(d) {
+                return {
+                    axis: d.dimension,
+                    value: d3.mean(d[sense])
+                }
+            })
+        }
 
-          	//Append the circles
-          	blobWrapper.selectAll(".radarCircle")
-          		.data(function(d,i) { return d; })
-          		.enter().append("circle")
-          		.attr("class", "radarCircle")
-          		.attr("r", cfg.dotRadius)
-          		.attr("cx", function(d,i){ return rScale(d.value) * Math.cos(angleSlice*i - Math.PI/2); })
-          		.attr("cy", function(d,i){ return rScale(d.value) * Math.sin(angleSlice*i - Math.PI/2); })
-          		.style("fill", function(d,i,j) { return cfg.color(j); })
-          		.style("fill-opacity", 0.8);
+        function addData() {
+            d3.json("hop_data/all_hop_data.json", function(data) {
 
-        })
+                var blobWrapper = g.selectAll(".radarWrapper")
+                    .data(data, function(d, i) {
+                        return d.hop;
+                    });
 
+                blobWrapper
+                    .enter().append("g")
+                    .attr("class", "radarWrapper")
+                    .append("path")
+                    .attr("class", "radarStroke")
+                    .attr("id", function(d) {
+                        return d.hop + "Radar";
+                    })
+                    // .attr("d", function(d,i) { return radarLine(d); })
+                    .attr("d", function(d, i) {
+                        return radarLine(extractAvgs(d, "flavor"));
+                    })
+                    .style("stroke-width", cfg.strokeWidth + "px")
+                    .style("stroke-opacity", cfg.radarStrokeOpacity)
+                    // .style("stroke", function(d,i) { return cfg.color(i); })
+                    .style("stroke", cfg.radarStrokeColor)
+                    .style("stroke-width", 1)
+                    .style("fill", "none")
+                    .on("mouseover", function(d) {
+                        alterRadar(this.id, "black", 4, 1.0);
+                        tooltip.html(d.hop.toUpperCase())
+                            .style("opacity", 1.0)
+                            .style("left", (d3.event.pageX + 10) + "px")
+                            .style("top", (d3.event.pageY) + "px");
+                    })
+                    .on("mouseout", function() {
+                        tooltip.style("opacity", 0);
+                        alterRadar(this.id, cfg.radarStrokeColor, cfg.strokeWidth, cfg.radarStrokeOpacity);
+                    });
 
+                var hopLabels = legend.selectAll(".hopLabel")
+                    .data(data.map(function(d) { return d.hop; }), function(d) { return d; })
+                    .enter()
+                    .append("g")
+                    .attr("transform", function(d, i) { return "translate(0," + 30*i + ")"; });
 
+                hopLabels.append("text")
+                    .attr("clicked", 0) //custom attribute
+                    .attr("class", "hopLabel")
+                    .style("cursor", "pointer")
+                    .text(function(d) { return d.toUpperCase(); })
+                    // .attr("y", function(d, i) { return 30*i; })
+                    .on("mouseover", function(d, i) {
+                      alterRadar(d+"Radar", "black", 4, 1.0)
+                    })
+                    .on("mouseout", function(d, i) {
+                      alterRadar(d+"Radar", cfg.radarStrokeColor, cfg.strokeWidth, cfg.radarStrokeOpacity)
+                    })
+                    .on("click", function(d, i) {
+                      var label = d3.select(this);
+                      var truth = parseInt(label.attr("clicked"));
+                      if (!truth) { label.style("fill", cfg.color(i)) }
+                      else { label.style("fill", "black") };
+                      label.attr("clicked", (truth + 1) % 2)
+                      alterRadar(d+"Radar", cfg.color(i), 4, 1.0)
+                    });
 
+                // var hopLabels = d3.select("#legendId").selectAll(".hopLabel")
+                //     .data(data.map(function(d) { return d.hop; }), function(d) { return d; })
+                //     .enter()
+                //     .append("input")
+                //     .attr("class", "hopLabel")
+                //     .attr("type", "checkbox")
+                //     .html(function(d) { return d.toUpperCase(); })
+                //     .attr("y", function(d, i) { return 30*i; })
+                //     .on("mouseover", function(d, i) {
+                //       alterRadar(d+"Radar", "black", 4, 1.0)
+                //     })
+                //     .on("mouseout", function(d, i) {
+                //       alterRadar(d+"Radar", cfg.radarStrokeColor, cfg.strokeWidth, cfg.radarStrokeOpacity)
+                //     });
 
+            }) //json callback
+        } // addData
 
+        var tooltip = d3.select(".tooltip")
+        addData();
 
+        function alterRadar(hopId, color, thickness, opacity) {
+            d3.select("#"+hopId)
+                .style("stroke-width", thickness)
+                .style("stroke", color)
+                .style("stroke-opacity", opacity);
+        }
         /////////////////////////////////////////////////////////
         /////////////////// Helper Function /////////////////////
         /////////////////////////////////////////////////////////
-
         //Taken from http://bl.ocks.org/mbostock/7555321
         //Wraps SVG text
         function wrap(text, width) {
@@ -236,7 +307,8 @@
                     }
                 }
             });
-        } //wrap
+        }
+
     </script>
 
 
