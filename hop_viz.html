@@ -3,51 +3,35 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>TITLE</title>
+    <title>Hop Viz</title>
     <meta name="description" content="DESCRIPTION">
-    <link rel="stylesheet" href="PATH">
+    <!-- <link rel="stylesheet" href="PATH"> -->
     <script src="d3/d3.min.js"></script>
     <!--[if lt IE 9]>
        <script src = "http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
      <![endif]-->
-    <style>
-        body {
-            font-family: sans-serif;
-        }
-
-        div.tooltip {
-            position: absolute;
-            text-align: center;
-            vertical-align: middle;
-            /*width: 100px;*/
-            width: auto;
-            height: auto;
-            padding: 8px 5px;
-            font: 12px sans-serif;
-            color: white;
-            background: black;
-            border: 0px;
-            border-radius: 8px;
-            pointer-events: none;
-        }
-    </style>
 </head>
 
 <body>
-    <h1> Compiling The Hop Chronicles Data: Br&uuml;losophy </h1>
-    <div id="optionsId">
-        <input type="radio" class="senseOption" name="sense" value="aroma" checked> AROMA
-        <br>
-        <input type="radio" class="senseOption" name="sense" value="flavor"> FLAVOR
-        <br>
-        <input type="checkbox" id="hideHops">Hide unselected hops
-    </div>
-    <div class="tooltip" style="opacity: 0"></div>
-    <div id="radarChartId" style="display: inline-block;"></div>
-    <div id="legendId" style="display: inline-block; padding-left: 25px"></div>
-    <div id="barChartId"></div>
+  <div id="vizId"></div>
 
     <script>
+
+        var viz = d3.select("#vizId")
+            .style("font-family", "sans-serif");
+        viz.append("div")
+            .attr("id", "optionsId");
+        viz.append("div")
+            .attr("id", "legendId")
+            .style("display", "inline-block")
+            .style("vertical-align", "top")
+            .style("margin-right", "10px");
+        viz.append("div")
+            .attr("id", "radarChartId")
+            .style("display", "inline-block");
+        viz.append("div")
+            .attr("id", "barChartId");
+
         // The basic code for the radar chart was written by Nadieh Bremer (visualcinnamon.com).
         // See the Block here: http://bl.ocks.org/nbremer/21746a9668ffdf6d8242
         // and Nadieh's blog post here: https://www.visualcinnamon.com/2015/10/different-look-d3-radar-chart.html
@@ -59,9 +43,11 @@
         //                RADAR VARIABLES AND CHART                   //
         ////////////////////////////////////////////////////////////////
 
+        d3.select("#optionsId").html('<fieldset name="Options" style="display: inline-block"><input type="radio" class="senseOption" name="sense" value="aroma" checked> Show average <span class="senseLabel">AROMA</span> ratings<br><input type="radio" class="senseOption" name="sense" value="flavor"> Show average <span class="senseLabel">FLAVOR</span> ratings<br><br><input type="checkbox" id="hideHops">Hide unselected hops</fieldset>')
+
         var cfg = {
-            w: 500, //Width of the circle
-            h: 500, //Height of the circle
+            w: 450, //Width of the circle
+            h: 450, //Height of the circle
             margin: {
                 top: 50,
                 right: 50,
@@ -70,7 +56,7 @@
             }, //The margins of the SVG
             levels: 3, //How many levels or inner circles should there be drawn
             maxValue: 7, //What is the value that the biggest circle will represent
-            labelFactor: 1.1, //How much farther than the radius of the outer circle should the labels be placed
+            labelFactor: 1.11, //How much farther than the radius of the outer circle should the labels be placed
             wrapWidth: 60, //The number of pixels after which a label needs to be given a new line
             opacityArea: 0.35, //The opacity of the area of the blob
             dotRadius: 4, //The size of the colored circles of each blog
@@ -78,7 +64,6 @@
             strokeWidth: 1, //The width of the stroke around each blob
             roundStrokes: false, //If true the area and stroke will follow a round path (cardinal-closed)
             // color: d3.scaleOrdinal(d3.schemeCategory20), //Color function
-            color: ["red", "blue", "green", "orange", "purple"],
             radarColor: {
                 show: {
                     flavor: "#002057",
@@ -106,9 +91,25 @@
             angleSlice = Math.PI * 2 / total; //The width in radians of each "slice"
 
         var showOrHide = "show",
-            selectedSense = selectedSense = d3.select("input[name='sense']:checked").property("value"),
+            selectedSense = d3.select("input[name='sense']:checked").property("value"),
             vizStatus = {},
             nSel = 0;
+
+        var colorList = ["#258000", "#e4a400", "#5700af"],
+            colorStatus = {};
+        colorList.forEach(function(c) { colorStatus[c] = 0; });
+
+        function pickColor() {
+          var c;
+          for (i=0; i<colorList.length; i++) {
+            c = colorList[i]
+            if (!colorStatus[c]) {
+              colorStatus[c] = 1;
+              return c;
+            }
+          }
+          return;
+        }
 
         //Scale for the radius
         var rScale = d3.scaleLinear()
@@ -121,11 +122,6 @@
             .attr("height", cfg.h + cfg.margin.top + cfg.margin.bottom)
             .append("g")
             .attr("transform", "translate(" + (cfg.w / 2 + cfg.margin.left) + "," + (cfg.h / 2 + cfg.margin.top) + ")");
-
-        var legend = d3.select("#legendId").append("svg")
-            .attr("width", 300)
-            .attr("height", cfg.h)
-            .append("g");
 
         //Wrapper for the grid & axes
         var axisGrid = g.append("g").attr("class", "axisWrapper");
@@ -227,7 +223,7 @@
                 bottom: 50,
                 left: 50
             },
-            width: 800,
+            width: 650,
             height: 125,
         }
 
@@ -255,16 +251,39 @@
 
         var t = d3.transition().duration(200);
 
+        d3.select("#barChartId").append("select")
+            .attr("id", "barPlotSelector")
+            .style("width", "150px")
+            .style("position", "absolute")
+            .style("left", barCfg.margin.left + "px")
+            .on("change", function() {
+                plotBars(d3.select(this).property("value"))
+            })
+            .append("option")
+            .attr("value", "")
+            .html("CHOOSE A HOP");
+
         var barPlot = d3.select("#barChartId").append("svg")
             .attr("width", barCfg.width + barCfg.margin.left + barCfg.margin.right)
             .attr("height", barCfg.height + barCfg.margin.top + barCfg.margin.bottom)
             .append("g")
             .attr("transform", "translate(" + barCfg.margin.left + "," + barCfg.margin.top + ")");
 
-        barPlot.append("text")
-            .attr("id", "barPlotHop")
-            .attr("y", -barCfg.margin.top / 2)
-            .attr("text-anchor", "start");
+        var barLegends = barPlot.append("g")
+            .attr("transform", "translate(150," + (5 - barCfg.margin.top) + ")")
+            .selectAll(".barLegendLine")
+            .data(senses).enter()
+            .append("g")
+            .attr("transform", function(d, i) { return "translate(0," + 10*i + ")"});
+
+        barLegends.append("rect")
+            .attr("width", 30)
+            .attr("height", 1)
+            .style("fill", function(d) { return cfg.radarColor["show"][d]; });
+        barLegends.append("text")
+            .attr("transform", "translate(35, 3)")
+            .style("font-size", "10px")
+            .text(function(d) { return d;})
 
         barPlot.selectAll(".dimLabel")
             .data(dims)
@@ -292,7 +311,7 @@
             })
             .enter()
             .append("g")
-            .classed("dimBox", 1)
+            .attr("class", "dimBox")
             .attr("transform", function(d) {
                 return "translate(" + xDim(d) + ",0)";
             });
@@ -302,10 +321,10 @@
             d3.json("hop_data/all_hop_data.json", function(data) {
 
                 data.forEach(function(d) {
-                    vizStatus[d.hop] = 0;
+                    vizStatus[d.hop] = null;
                 });
 
-                var labelSpacing = cfg.h / (data.length + 1)
+                // var labelSpacing = (cfg.h + cfg.margin.top + cfg.margin.bottom) / (data.length + 1)
 
                 var blobWrapper = g.selectAll(".radarWrapper")
                     .data(data, function(d, i) {
@@ -343,31 +362,29 @@
                         }
                     });
 
+                var legend = d3.select("#legendId");
+                legend.append("h4").html("Hops");
                 var hopLabels = legend.selectAll(".hopLabel")
-                    .data(data.map(function(d) {
-                        return d.hop;
-                    }), function(d) {
-                        return d;
-                    })
-                    .enter()
-                    .append("g")
-                    .attr("class", "hopLabelGroup")
-                    .attr("transform", function(d, i) {
-                        return "translate(0," + labelSpacing * (i + 1) + ")";
-                    });
-
-                hopLabels.append("text")
+                    .data(data.map(function(d) { return d.hop; }), function(d) { return d; })
+                    .enter().append("li")
                     .attr("class", "hopLabel")
                     .style("cursor", "pointer")
-                    .text(function(d) {
+                    .style("list-style", "none")
+                    .style("padding", "2px 10px")
+                    .style("margin", "4px 0px")
+                    .style("border", "1px solid grey")
+                    .style("border-radius", "4px")
+                    .html(function(d) {
                         return d.toUpperCase();
                     })
                     .on("mouseover", function(d, i) {
                         if (!vizStatus[d]) {
+                            d3.select(this).style("background-color", "#a4a4a4")
                             alterRadar(d + "Radar", "black", 4, 1.0)
                         }
                     })
                     .on("mouseout", function(d, i) {
+                        d3.select(this).style("background-color", "white")
                         if (!vizStatus[d]) {
                             alterRadar(d + "Radar", cfg.radarColor[showOrHide][selectedSense], cfg.strokeWidth, cfg.radarOpacity)
                         }
@@ -377,25 +394,51 @@
                         var label = d3.select(this);
 
                         if (!truth) {
-                            if (nSel >= 5) alert("You can select a max of 5 hops.")
+                            var color = pickColor();
+                            if (!color) alert("You can select a max of 3 hops.");
                             else {
-                                nSel++;
-                                label.style("fill", cfg.color[nSel-1])
-                                alterRadar(d + "Radar", cfg.color[nSel-1], 4, 1.0)
+                                label.style("background-color", "white")
+                                  .style("color", color) // if using li elements
+                                  .style("font-weight", "bold");
+                                alterRadar(d + "Radar", color, 4, 1.0);
+                                d3.select("#barPlotSelector").property("value", d);
                                 plotBars(d);
-                                vizStatus[d] = (truth + 1) % 2;
+                                vizStatus[d] = color;
                             }
                         } else {
-                            nSel--;
-                            label.style("fill", "black")
+                            colorStatus[truth] = 0;
+                            label.style("color", "black") // if using li elements
+                            label.style("font-weight", "normal")
                             alterRadar(d + "Radar", cfg.radarColor[showOrHide][selectedSense], cfg.strokeWidth, cfg.radarOpacity)
-                            vizStatus[d] = (truth + 1) % 2;
+                            vizStatus[d] = null;
                         }
                     });
+
+                    d3.select("#barPlotSelector").selectAll(".hopOption")
+                        .data(data)
+                        .enter()
+                        .append("option")
+                        .attr("class", "hopOption")
+                        .attr("value", function(d) { return d.hop; })
+                        .html(function(d) { return d.hop.toUpperCase(); });
             }) //json callback
         } // addData
 
-        var tooltip = d3.select(".tooltip")
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .style("position", "absolute")
+            .style("text-align", "center")
+            .style("vertical-align", "middle")
+            .style("width", "auto")
+            .style("height", "auto")
+            .style("padding", "8px 5px")
+            .style("font", "12px sans-serif")
+            .style("color", "white")
+            .style("background", "black")
+            .style("border", "0px")
+            .style("border-radius", "8px")
+            .style("pointer-events", "none")
+            .style("opacity", 0);
 
         // show/hide unselected hops based on checkbox
         d3.select("#hideHops")
@@ -414,6 +457,10 @@
                 selectedSense = d3.select("input[name='sense']:checked").property("value");
                 plotRadars(selectedSense);
             });
+
+        d3.selectAll(".senseLabel")
+            .style("font-weight", "bold")
+            .style("color", function() { return cfg.radarColor["show"][d3.select(this).html().toLowerCase()] });
 
         // function to plot sense or aroma data and appropriate color
         function plotRadars(sense) {
@@ -436,7 +483,10 @@
         // function to plot bar data
         function plotBars(hop) {
 
-            d3.select("#barPlotHop").text(hop.toUpperCase());
+            if (!hop) {
+              d3.selectAll(".senseData").selectAll("*").remove();
+              return;
+            }
 
             var hopData = d3.select("#" + hop + "Radar").datum();
             var dimBoxes = d3.selectAll(".dimBox")
@@ -521,7 +571,7 @@
 
         setupRadar();
 
-        //Taken from http://bl.ocks.org/mbostock/7555321
+        //Modified from http://bl.ocks.org/mbostock/7555321
         //Wraps SVG text
         function wrap(text, width) {
             text.each(function() {
@@ -539,7 +589,8 @@
                 while (word = words.pop()) {
                     line.push(word);
                     tspan.text(line.join(" "));
-                    if (tspan.node().getComputedTextLength() > width) {
+                    if (tspan.node().getComputedTextLength() > width && line.length > 1) {
+                        // second condition in previous line was needed to avoid empty lines when first word is too long
                         line.pop();
                         tspan.text(line.join(" "));
                         line = [word];
