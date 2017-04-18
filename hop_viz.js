@@ -325,7 +325,7 @@ function addData() {
 
     selectedSense = d3.select("input[name='sense']:checked").property("value");
 
-    d3.json("hop_data/all_hop_data.json", function(data) {
+    d3.json("all_hop_data.json", function(data) {
 
         data.forEach(function(d) {
             vizStatus[d.hop] = null;

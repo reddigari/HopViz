@@ -17,3 +17,5 @@ for fname in fnames:
 
 with open('hop_data/all_hop_data.json', 'w') as f:
     json.dump(json_out, f)
+with open('all_hop_data.json', 'w') as f:
+    json.dump(json_out, f)
