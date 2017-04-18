@@ -7,20 +7,22 @@
     <meta name="description" content="DESCRIPTION">
     <!-- <link rel="stylesheet" href="PATH"> -->
     <script src="d3/d3.min.js"></script>
+    <!-- <script src="hop_viz.js"></script> -->
+    <!-- <script src="https://d3js.org/d3.v4.min.js"></script> -->
     <!--[if lt IE 9]>
        <script src = "http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
      <![endif]-->
 </head>
 
 <body>
-  <div id="vizId"></div>
+    <div id="vizId"></div>
 
     <script>
-
         var viz = d3.select("#vizId")
             .style("font-family", "sans-serif");
         viz.append("div")
-            .attr("id", "optionsId");
+            .attr("id", "optionsId")
+            .style("margin-bottom", "20px");
         viz.append("div")
             .attr("id", "legendId")
             .style("display", "inline-block")
@@ -31,6 +33,11 @@
             .style("display", "inline-block");
         viz.append("div")
             .attr("id", "barChartId");
+
+        d3.select("#optionsId")
+            .html(
+            '<fieldset name="Options" style="display: inline-block"><input type="radio" class="senseOption" name="sense" value="aroma" checked> Show average <span class="senseLabel">AROMA</span> ratings<br><input type="radio" class="senseOption" name="sense" value="flavor"> Show average <span class="senseLabel">FLAVOR</span> ratings<br><br><input type="checkbox" id="hideHops">Hide unselected hops</fieldset>'
+        )
 
         // The basic code for the radar chart was written by Nadieh Bremer (visualcinnamon.com).
         // See the Block here: http://bl.ocks.org/nbremer/21746a9668ffdf6d8242
@@ -43,11 +50,9 @@
         //                RADAR VARIABLES AND CHART                   //
         ////////////////////////////////////////////////////////////////
 
-        d3.select("#optionsId").html('<fieldset name="Options" style="display: inline-block"><input type="radio" class="senseOption" name="sense" value="aroma" checked> Show average <span class="senseLabel">AROMA</span> ratings<br><input type="radio" class="senseOption" name="sense" value="flavor"> Show average <span class="senseLabel">FLAVOR</span> ratings<br><br><input type="checkbox" id="hideHops">Hide unselected hops</fieldset>')
-
         var cfg = {
-            w: 450, //Width of the circle
-            h: 450, //Height of the circle
+            w: 400, //Width of the circle
+            h: 400, //Height of the circle
             margin: {
                 top: 50,
                 right: 50,
@@ -57,7 +62,7 @@
             levels: 3, //How many levels or inner circles should there be drawn
             maxValue: 7, //What is the value that the biggest circle will represent
             labelFactor: 1.11, //How much farther than the radius of the outer circle should the labels be placed
-            wrapWidth: 60, //The number of pixels after which a label needs to be given a new line
+            wrapWidth: 50, //The number of pixels after which a label needs to be given a new line
             opacityArea: 0.35, //The opacity of the area of the blob
             dotRadius: 4, //The size of the colored circles of each blog
             opacityCircles: 0.05, //The opacity of the circles of each blob
@@ -78,37 +83,39 @@
         };
 
         var dims = ['CITRUS', 'TROPICAL FRUIT', 'STONE FRUIT', 'APPLE-PEAR',
-            'MELON', 'BERRY', 'FLORAL', 'SPICY-HERBAL', 'PINE', 'RESINOUS',
-            'GRASSY', 'EARTHY-WOODY', 'ONION-GARLIC', 'DANK-CATTY'
-        ];
+                'MELON', 'BERRY', 'FLORAL', 'SPICY-HERBAL', 'PINE', 'RESINOUS',
+                'GRASSY', 'EARTHY-WOODY', 'ONION-GARLIC', 'DANK-CATTY'
+            ],
+            senses = ["aroma", "flavor"];
 
-        var senses = ["aroma", "flavor"];
-
-        var maxValue = cfg.maxValue;
-        var allAxis = dims, //Names of each axis
+        var maxValue = cfg.maxValue,
+            allAxis = dims, //Names of each axis
             total = allAxis.length, //The number of different axes
             radius = Math.min(cfg.w / 2, cfg.h / 2), //Radius of the outermost circle
             angleSlice = Math.PI * 2 / total; //The width in radians of each "slice"
 
         var showOrHide = "show",
-            selectedSense = d3.select("input[name='sense']:checked").property("value"),
+            // selectedSense = d3.select("input[name='sense']:checked").property("value"),
+            selectedSense,
             vizStatus = {},
             nSel = 0;
 
         var colorList = ["#258000", "#e4a400", "#5700af"],
             colorStatus = {};
-        colorList.forEach(function(c) { colorStatus[c] = 0; });
+        colorList.forEach(function(c) {
+            colorStatus[c] = 0;
+        });
 
         function pickColor() {
-          var c;
-          for (i=0; i<colorList.length; i++) {
-            c = colorList[i]
-            if (!colorStatus[c]) {
-              colorStatus[c] = 1;
-              return c;
+            var c;
+            for (i = 0; i < colorList.length; i++) {
+                c = colorList[i]
+                if (!colorStatus[c]) {
+                    colorStatus[c] = 1;
+                    return c;
+                }
             }
-          }
-          return;
+            return;
         }
 
         //Scale for the radius
@@ -178,7 +185,7 @@
         //Append the labels at each axis
         axis.append("text")
             .attr("class", "legend")
-            .style("font-size", "11px")
+            .style("font-size", "9px")
             .attr("text-anchor", "middle")
             .attr("dy", "0.35em")
             .attr("x", function(d, i) {
@@ -224,7 +231,7 @@
                 left: 50
             },
             width: 650,
-            height: 125,
+            height: 100,
         }
 
         var xDim = d3.scaleBand()
@@ -274,16 +281,22 @@
             .selectAll(".barLegendLine")
             .data(senses).enter()
             .append("g")
-            .attr("transform", function(d, i) { return "translate(0," + 10*i + ")"});
+            .attr("transform", function(d, i) {
+                return "translate(0," + 10 * i + ")"
+            });
 
         barLegends.append("rect")
             .attr("width", 30)
             .attr("height", 1)
-            .style("fill", function(d) { return cfg.radarColor["show"][d]; });
+            .style("fill", function(d) {
+                return cfg.radarColor["show"][d];
+            });
         barLegends.append("text")
             .attr("transform", "translate(35, 3)")
             .style("font-size", "10px")
-            .text(function(d) { return d;})
+            .text(function(d) {
+                return d;
+            })
 
         barPlot.selectAll(".dimLabel")
             .data(dims)
@@ -318,6 +331,7 @@
 
         // function to plot radar data the first time
         function setupRadar() {
+            selectedSense = d3.select("input[name='sense']:checked").property("value");
             d3.json("hop_data/all_hop_data.json", function(data) {
 
                 data.forEach(function(d) {
@@ -363,13 +377,22 @@
                     });
 
                 var legend = d3.select("#legendId");
-                legend.append("h4").html("Hops");
+                legend.append("span")
+                    .html("Hops")
+                    .style("font-weight", "bold")
+                    .style("font-size", "14px");
+
                 var hopLabels = legend.selectAll(".hopLabel")
-                    .data(data.map(function(d) { return d.hop; }), function(d) { return d; })
+                    .data(data.map(function(d) {
+                        return d.hop;
+                    }), function(d) {
+                        return d;
+                    })
                     .enter().append("li")
                     .attr("class", "hopLabel")
                     .style("cursor", "pointer")
                     .style("list-style", "none")
+                    .style("font-size", "12px")
                     .style("padding", "2px 10px")
                     .style("margin", "4px 0px")
                     .style("border", "1px solid grey")
@@ -398,8 +421,8 @@
                             if (!color) alert("You can select a max of 3 hops.");
                             else {
                                 label.style("background-color", "white")
-                                  .style("color", color) // if using li elements
-                                  .style("font-weight", "bold");
+                                    .style("color", color) // if using li elements
+                                    .style("font-weight", "bold");
                                 alterRadar(d + "Radar", color, 4, 1.0);
                                 d3.select("#barPlotSelector").property("value", d);
                                 plotBars(d);
@@ -414,13 +437,17 @@
                         }
                     });
 
-                    d3.select("#barPlotSelector").selectAll(".hopOption")
-                        .data(data)
-                        .enter()
-                        .append("option")
-                        .attr("class", "hopOption")
-                        .attr("value", function(d) { return d.hop; })
-                        .html(function(d) { return d.hop.toUpperCase(); });
+                d3.select("#barPlotSelector").selectAll(".hopOption")
+                    .data(data)
+                    .enter()
+                    .append("option")
+                    .attr("class", "hopOption")
+                    .attr("value", function(d) {
+                        return d.hop;
+                    })
+                    .html(function(d) {
+                        return d.hop.toUpperCase();
+                    });
             }) //json callback
         } // addData
 
@@ -460,7 +487,9 @@
 
         d3.selectAll(".senseLabel")
             .style("font-weight", "bold")
-            .style("color", function() { return cfg.radarColor["show"][d3.select(this).html().toLowerCase()] });
+            .style("color", function() {
+                return cfg.radarColor["show"][d3.select(this).html().toLowerCase()]
+            });
 
         // function to plot sense or aroma data and appropriate color
         function plotRadars(sense) {
@@ -469,7 +498,9 @@
                     return radarLine(extractAvgs(d, sense));
                 })
                 // .style("stroke", cfg.radarColor[showOrHide][sense])
-                .style("stroke", function(d) { return vizStatus[d.hop] ? d3.select(this).style("stroke") : cfg.radarColor[showOrHide][sense] })
+                .style("stroke", function(d) {
+                    return vizStatus[d.hop] ? d3.select(this).style("stroke") : cfg.radarColor[showOrHide][sense]
+                })
         }
 
         // function to modify look of radar based on selection/hovering
@@ -484,8 +515,8 @@
         function plotBars(hop) {
 
             if (!hop) {
-              d3.selectAll(".senseData").selectAll("*").remove();
-              return;
+                d3.selectAll(".senseData").selectAll("*").remove();
+                return;
             }
 
             var hopData = d3.select("#" + hop + "Radar").datum();
