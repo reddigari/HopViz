@@ -79,7 +79,7 @@ var showOrHide = "show",
     vizStatus = {},
     nSel = 0;
 
-var colorList = ["#258000", "#e4a400", "#5700af"],
+var colorList = ["#ebaa19", "#6500f6", "#22f8fa"],
     colorStatus = {};
 colorList.forEach(function(c) {
     colorStatus[c] = 0;
@@ -356,7 +356,7 @@ function addData() {
             .style("fill", "none")
             .on("mouseover", function(d) {
                 if (!vizStatus[d.hop]) {
-                    alterRadar(this.id, "black", 4, 1.0);
+                    alterRadar(this.id, "#258000", 4, 1.0);
                 }
                 tooltip.html(d.hop.toUpperCase())
                     .style("opacity", 1.0)
@@ -393,7 +393,7 @@ function addData() {
             .on("mouseover", function(d, i) {
                 if (!vizStatus[d]) {
                     d3.select(this).style("background-color", "#a4a4a4")
-                    alterRadar(d + "Radar", "black", 4, 1.0)
+                    alterRadar(d + "Radar", "#258000", 4, 1.0)
                 }
             })
             .on("mouseout", function(d, i) {
