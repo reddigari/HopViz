@@ -6,7 +6,9 @@ function setupDocument() {
         .attr("id", "optionsId");
     viz.append("div")
         .attr("id", "legendId")
-        .style("display", "inline-block")
+        // .style("display", "inline-block")
+        .style("max-width", "600px")
+        .style("display", "block")
         .style("vertical-align", "top")
         .style("margin-right", "10px");
     viz.append("div")
@@ -30,8 +32,8 @@ function setupDocument() {
 ////////////////////////////////////////////////////////////////
 
 var cfg = {
-    w: 400, //Width of the circle
-    h: 400, //Height of the circle
+    w: 450, //Width of the circle
+    h: 450, //Height of the circle
     margin: {
         top: 50,
         right: 50,
@@ -79,7 +81,7 @@ var showOrHide = "show",
     vizStatus = {},
     nSel = 0;
 
-var colorList = ["#ebaa19", "#6500f6", "#22f8fa"],
+var colorList = ["#cc8f08", "#6500f6", "#22f8fa"],
     colorStatus = {};
 colorList.forEach(function(c) {
     colorStatus[c] = 0;
@@ -380,13 +382,14 @@ function addData() {
             })
             .enter().append("li")
             .attr("class", "hopLabel")
+            .style("display", "inline-block")
             .style("cursor", "pointer")
             .style("list-style", "none")
             .style("font-size", "12px")
-            .style("padding", "2px 10px")
-            .style("margin", "4px 0px")
+            .style("padding", "5px 5px")
+            .style("margin", "0px 0px")
             .style("border", "1px solid grey")
-            .style("border-radius", "4px")
+            // .style("border-radius", "4px")
             .html(function(d) {
                 return d.toUpperCase();
             })
